@@ -1,3 +1,4 @@
 pyocclient==0.4
 tqdm==4.19.5
 Pillow==5.0.0
+scikit-image >= 0.13.1
