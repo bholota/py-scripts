@@ -26,7 +26,7 @@ def main():
     for file_name in os.listdir(args.dir):
         full_path = f"{args.dir}/{file_name}"
         extension = full_path.split(".")[-1]
-        new_path = f"{args.dir}/{hash_from_file(full_path)}.{extension}"
+        new_path = f"{args.dir}/{hash_from_file(full_path)}.{extension.lower()}"
         os.rename(full_path, new_path)
 
         if not args.normalize:
