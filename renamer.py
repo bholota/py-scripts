@@ -1,8 +1,12 @@
 #!/bin/python3
 
 import argparse
-import os
 import hashlib
+import os
+
+from PIL import Image
+
+from utils.image import apply_rotation_from_original
 
 
 def hash_from_file(file_name):
@@ -16,6 +20,7 @@ def hash_from_file(file_name):
 def main():
     parser = argparse.ArgumentParser(description="Rename all files in directory with hash method")
     parser.add_argument("dir", help="Target directory", type=str)
+    parser.add_argument("-n", "--normalize", help="Apply image transformations based on exif", action="store_true")
     args = parser.parse_args()
 
     for file_name in os.listdir(args.dir):
@@ -23,6 +28,20 @@ def main():
         extension = full_path.split(".")[-1]
         new_path = f"{args.dir}/{hash_from_file(full_path)}.{extension}"
         os.rename(full_path, new_path)
+
+        if not args.normalize:
+            continue
+
+        # normalization and exif cleanup
+        try:
+            with Image.open(new_path) as img:
+                normalized = apply_rotation_from_original(img, img)
+                exif = list(normalized.getdata())
+                clean_image = Image.new(normalized.mode, normalized.size)
+                clean_image.putdata(exif)
+                clean_image.save(new_path)
+        except IOError:
+            pass
 
 
 if __name__ == "__main__":
