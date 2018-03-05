@@ -3,6 +3,7 @@
 import argparse
 import hashlib
 import os
+from multiprocessing.dummy import Pool as ThreadPool
 
 from PIL import Image
 from tqdm import tqdm
@@ -20,7 +21,8 @@ def hash_from_file(file_name):
 
 def rename(path, normalize=False):
     progress = tqdm(range(len(os.listdir(path))), unit="file")
-    for file_name in os.listdir(path):
+
+    def convert(file_name):
         full_path = f"{path}/{file_name}"
         extension = full_path.split(".")[-1]
         new_path = f"{path}/{hash_from_file(full_path)}.{extension.lower()}"
@@ -28,7 +30,7 @@ def rename(path, normalize=False):
 
         if not normalize:
             progress.update()
-            continue
+            return
 
         # normalization and exif cleanup
         try:
@@ -41,6 +43,12 @@ def rename(path, normalize=False):
         except IOError:
             pass
         progress.update()
+
+    pool = ThreadPool(4)
+    results = pool.map(convert, os.listdir(path))
+    pool.close()
+    pool.join()
+
     progress.close()
 
 
