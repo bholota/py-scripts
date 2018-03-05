@@ -5,6 +5,7 @@ import hashlib
 import os
 
 from PIL import Image
+from tqdm import tqdm
 
 from utils.image import apply_rotation_from_original
 
@@ -17,19 +18,16 @@ def hash_from_file(file_name):
     return sha256.hexdigest()
 
 
-def main():
-    parser = argparse.ArgumentParser(description="Rename all files in directory with hash method")
-    parser.add_argument("dir", help="Target directory", type=str)
-    parser.add_argument("-n", "--normalize", help="Apply image transformations based on exif", action="store_true")
-    args = parser.parse_args()
-
-    for file_name in os.listdir(args.dir):
-        full_path = f"{args.dir}/{file_name}"
+def rename(path, normalize=False):
+    progress = tqdm(range(len(os.listdir(path))), unit="file")
+    for file_name in os.listdir(path):
+        full_path = f"{path}/{file_name}"
         extension = full_path.split(".")[-1]
-        new_path = f"{args.dir}/{hash_from_file(full_path)}.{extension.lower()}"
+        new_path = f"{path}/{hash_from_file(full_path)}.{extension.lower()}"
         os.rename(full_path, new_path)
 
-        if not args.normalize:
+        if not normalize:
+            progress.update()
             continue
 
         # normalization and exif cleanup
@@ -42,6 +40,16 @@ def main():
                 clean_image.save(new_path)
         except IOError:
             pass
+        progress.update()
+    progress.close()
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Rename all files in directory with hash method")
+    parser.add_argument("dir", help="Target directory", type=str)
+    parser.add_argument("-n", "--normalize", help="Apply image transformations based on exif", action="store_true")
+    args = parser.parse_args()
+    rename(args.dir, args.normalize)
 
 
 if __name__ == "__main__":
