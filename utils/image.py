@@ -5,7 +5,7 @@ def apply_rotation_from_original(original, target):
     if hasattr(original, '_getexif'):
         orientation = 0x0112
         exif = original._getexif()
-        if exif is not None:
+        if exif is not None and orientation in exif:
             orientation = exif[orientation]
             rotations = {
                 3: Image.ROTATE_180,
