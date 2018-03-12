@@ -4,7 +4,6 @@ import argparse
 import fnmatch
 import os
 import warnings
-from multiprocessing.dummy import Pool as ThreadPool
 
 from skimage import io, img_as_ubyte
 from tqdm import tqdm
@@ -38,10 +37,8 @@ def merge_heatmap(source_path, target_path):
         merge_and_save(f"{source_path}/{file_name}", f"{target_dir}/{heatmap_file_name}")
         progress.update()
 
-    pool = ThreadPool(4)
-    results = pool.map(convert, listdir)
-    pool.close()
-    pool.join()
+    for file_name in listdir:
+        convert(file_name)
 
     progress.close()
 
