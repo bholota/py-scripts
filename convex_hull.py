@@ -2,6 +2,7 @@
 
 import argparse
 import os
+import fnmatch
 import warnings
 from multiprocessing.dummy import Pool as ThreadPool
 
@@ -22,7 +23,7 @@ def convert_and_save(file_name, new_file_name):
 
 
 def generate_convex_hull(source_dir, target_dir):
-    listdir = os.listdir(source_dir)
+    listdir = fnmatch.filter(os.listdir(source_dir), '*_label*[!lp].png')
     progress = tqdm(range(len(listdir)), unit="file")
 
     target_dir = (source_dir, target_dir)[target_dir != None]
