@@ -1,8 +1,10 @@
 #!/bin/python3
 
 import argparse
-import hashlib
+import imagehash
 import os
+import fnmatch
+import glob
 from multiprocessing.dummy import Pool as ThreadPool
 
 from PIL import Image
@@ -10,42 +12,47 @@ from tqdm import tqdm
 
 from utils.image import apply_rotation_from_original
 
-
-def hash_from_file(file_name):
-    sha256 = hashlib.sha256()
-    with open(file_name, "rb") as f:
-        for chunk in iter(lambda: f.read(4096), b""):
-            sha256.update(chunk)
-    return sha256.hexdigest()
-
-
-def rename(path, normalize=False):
+def rename(path, labels_path = None):
     progress = tqdm(range(len(os.listdir(path))), unit="file")
 
     def convert(file_name):
         full_path = f"{path}/{file_name}"
         extension = full_path.split(".")[-1]
-        new_path = f"{path}/{hash_from_file(full_path)}.{extension.lower()}"
-        os.rename(full_path, new_path)
-
-        if not normalize:
-            progress.update()
-            return
+        file_name_without_extension = os.path.basename(file_name).split(".")[0]
 
         # normalization and exif cleanup
         try:
-            with Image.open(new_path) as img:
+            with Image.open(full_path) as img:
                 normalized = apply_rotation_from_original(img, img)
-                exif = list(normalized.getdata())
-                clean_image = Image.new(normalized.mode, normalized.size)
-                clean_image.putdata(exif)
-                clean_image.save(new_path)
+
+                if img != normalized:
+                    print (f"{full_path} was normalized")
+                    exif = list(normalized.getdata())
+                    clean_image = Image.new(normalized.mode, normalized.size)
+                    clean_image.putdata(exif)
+                    clean_image.save(full_path)
+
+                perceptual_hash = imagehash.phash(normalized)
+                new_path = f"{path}/{perceptual_hash}.{extension.lower()}"
+
+                if new_path != full_path:
+                    print(f"renaming {full_path} to {new_path}")
+                    os.rename(full_path, new_path)
+
+                    if labels_path != None:
+                        for matching_filename in glob.iglob(f"{labels_path}/**/*{file_name_without_extension}*", recursive=True):
+                            renamed_file_name = matching_filename.replace(file_name_without_extension, f"{perceptual_hash}")
+
+                            if renamed_file_name != matching_filename:
+                                print(f"renaming match {matching_filename} to {renamed_file_name}")
+                                os.rename(matching_filename, renamed_file_name)
+
         except IOError:
             pass
         progress.update()
 
     pool = ThreadPool(4)
-    results = pool.map(convert, os.listdir(path))
+    results = pool.map(convert, fnmatch.filter(os.listdir(path),'*.*'))
     pool.close()
     pool.join()
 
@@ -55,9 +62,9 @@ def rename(path, normalize=False):
 def main():
     parser = argparse.ArgumentParser(description="Rename all files in directory with hash method")
     parser.add_argument("dir", help="Target directory", type=str)
-    parser.add_argument("-n", "--normalize", help="Apply image transformations based on exif", action="store_true")
+    parser.add_argument("labels_dir", nargs='?', help="Labels directory", type=str)
     args = parser.parse_args()
-    rename(args.dir, args.normalize)
+    rename(args.dir, args.labels_dir)
 
 
 if __name__ == "__main__":
