@@ -1,7 +1,7 @@
 #!/bin/python3
 
 import argparse
-import os
+from pathlib import Path
 
 import numpy as np
 from PIL import Image
@@ -29,8 +29,9 @@ def convert_to_bw_adaptive(original, block_size, offset):
     return Image.fromarray(np.uint8(binary_adaptive) * 255)
 
 
-def convert_and_save(file_name, threshold=128, block_size=99, offset=5, otsu=False, local_otsu=False, adaptive=False):
+def convert_and_save(file_path, threshold=128, block_size=99, offset=5, otsu=False, local_otsu=False, adaptive=False):
     try:
+        file_name = str(file_path)
         original = Image.open(file_name)
         new_name = file_name.replace('jpg', 'png')
         if otsu:
@@ -48,7 +49,7 @@ def convert_and_save(file_name, threshold=128, block_size=99, offset=5, otsu=Fal
 
 def main():
     parser = argparse.ArgumentParser(description="Converts all images in directory to monochrome")
-    parser.add_argument("dir", help="Target directory", type=str)
+    parser.add_argument("path", help="Target directory or file", type=str)
     parser.add_argument("-t", "--threshold", help="(default 128)", type=int, default=128)
     parser.add_argument("-b", "--block_size", help="(default 99)", type=int, default=99)
     parser.add_argument("-o", "--offset", help="(default 5)", type=int, default=5)
@@ -58,12 +59,19 @@ def main():
     args = parser.parse_args()
 
     print("Converting to monochrome...")
-    listdir = os.listdir(args.dir)
-    progress = tqdm(range(len(listdir)), unit="file")
-    for file_name in listdir:
-        convert_and_save(f"{args.dir}/{file_name}", threshold=args.threshold, block_size=args.block_size, offset=args.offset, otsu=args.otsu, local_otsu=args.local, adaptive=args.adaptive)
+    p = Path(args.path)
+    if p.is_dir():
+        listdir = list(p.iterdir())
+        progress = tqdm(range(len(listdir)), unit="file")
+        for file_path in listdir:
+            convert_and_save(file_path, threshold=args.threshold, block_size=args.block_size, offset=args.offset, otsu=args.otsu, local_otsu=args.local, adaptive=args.adaptive)
+            progress.update()
+        progress.close()
+    else:
+        progress = tqdm(range(1), unit="file")
+        convert_and_save(p, threshold=args.threshold, block_size=args.block_size, offset=args.offset, otsu=args.otsu, local_otsu=args.local, adaptive=args.adaptive)
         progress.update()
-    progress.close()
+        progress.close()
 
 
 if __name__ == "__main__":
