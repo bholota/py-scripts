@@ -14,7 +14,6 @@ from six.moves import cPickle as pickle
 class DetectorNet:
 
     def __init__(self, data_path_list, label_path_list, img_size=256, cache=False):
-        self.img_size = 128
         self.data_dir = data_path_list
         self.img_size = img_size
         self.X, self.Y = None, None
@@ -27,9 +26,15 @@ class DetectorNet:
             self.Y = self.load_resized_data(label_path_list, channel_count=1, reshape=True)
             self.write_cache()
 
-        img = self.X[0]
-        img = Image.fromarray((img * 255 / np.max(img)).astype('uint8'))
-        plot = plt.imshow(img)
+        key, img = next(iter(self.X.items()))
+        img = img * 255
+        lab = self.Y[key].reshape(256, 256)
+        fig, ax = plt.subplots(1, 2, sharey=True, sharex=True)
+        ax1, ax2 = ax.ravel()
+        ax1.imshow(img)
+        ax2.imshow(lab, cmap="Greys")
+        ax1.axis('off')
+        ax2.axis('off')
         plt.show()
 
     def train(self):
@@ -68,7 +73,7 @@ class DetectorNet:
             return False
 
     def load_resized_data(self, dir_path, channel_count=3, reshape=False):
-        x_data = []
+        x_data = {}
         tf.reset_default_graph()
         X = tf.placeholder(tf.float32, (None, None, channel_count))
         normalized = tf.image.per_image_standardization(X)
@@ -82,7 +87,7 @@ class DetectorNet:
                 img = imread(file_path)
                 img = img.reshape([img.shape[0], img.shape[1], channel_count]) if reshape else img
                 resized_img = sess.run(tf_img, feed_dict={X: img[:, :, :channel_count]})
-                x_data.append(resized_img)
+                key = file_path.split('/')[-1].split('.')[-2].replace('_heatmap', '')
+                x_data[key] = resized_img
 
-        x_data = np.array(x_data, dtype=np.float32)
         return x_data
