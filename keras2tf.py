@@ -30,7 +30,9 @@ def convert_and_save(keras_model_path, weight_path, dry_run=None):
     if weight_path is not None:
         model.load_weights(weight_path)
 
-    num_output = 1
+    print("Found inputs: " + str(model.inputs))
+
+    num_output = len(model.outputs)
     pred = [None] * num_output
     pred_node_names = [None] * num_output
 
@@ -49,8 +51,8 @@ def convert_and_save(keras_model_path, weight_path, dry_run=None):
         os.remove("./" + out_file_name)
 
     sess = K.get_session()
-    constatn_graph = graph_util.convert_variables_to_constants(sess, sess.graph.as_graph_def(), pred_node_names)
-    graph_io.write_graph(constatn_graph, ".", out_file_name, as_text=False)
+    constant_graph = graph_util.convert_variables_to_constants(sess, sess.graph.as_graph_def(), pred_node_names)
+    graph_io.write_graph(constant_graph, ".", out_file_name, as_text=False)
 
 
 def main():
