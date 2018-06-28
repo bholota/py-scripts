@@ -36,8 +36,9 @@ def convert_and_save(keras_model_path, weight_path, dry_run=None):
 
     for i in range(num_output):
         pred_node_names[i] = "out_" + str(i)
-        pred[i] = tf.identity(model.outputs[i], name=pred_node_names[i])
-    print('Found output nodes: ', pred_node_names)
+        tensor = tf.identity(model.outputs[i], name=pred_node_names[i])
+        pred[i] = {"tensor": tensor, "shape": tensor.shape}
+    print('Found output nodes: ', pred)
 
     if dry_run is not None:
         return  # just show output nodes
