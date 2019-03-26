@@ -46,8 +46,8 @@ def main():
     print('output nodes names are: ', pred_node_names)
 
     sess = K.get_session()
-    constatn_graph = graph_util.convert_variables_to_constants(sess, sess.graph.as_graph_def(), pred_node_names)
-    graph_io.write_graph(constatn_graph, OUTPUT_DIR, OUTPUT_FILE, as_text=False)
+    constant_graph = graph_util.convert_variables_to_constants(sess, sess.graph.as_graph_def(), pred_node_names)
+    graph_io.write_graph(constant_graph, OUTPUT_DIR, OUTPUT_FILE, as_text=False)
 
 
 if __name__ == "__main__":
