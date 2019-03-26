@@ -23,7 +23,8 @@ def convert_and_save(keras_model_path, weight_path, dry_run=None):
     name = Path(keras_model_path).name
     extension = name.split('.')[-1]
     if extension == "json":
-        model = model_from_json(keras_model_path)
+        with open(keras_model_path, 'r') as f:
+            model = model_from_json('\n'.join(f.readlines()))
     else:
         model = load_model(keras_model_path)
 
@@ -53,6 +54,7 @@ def convert_and_save(keras_model_path, weight_path, dry_run=None):
     sess = K.get_session()
     constant_graph = graph_util.convert_variables_to_constants(sess, sess.graph.as_graph_def(), pred_node_names)
     graph_io.write_graph(constant_graph, ".", out_file_name, as_text=False)
+    print('Saved as: ', out_file_name)
 
 
 def main():
